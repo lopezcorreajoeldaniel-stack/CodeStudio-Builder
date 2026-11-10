@@ -1,0 +1,56 @@
+
+name: Compilar APK de CodeStudio
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+
+      - name: Instalar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Preparar proyecto Android
+        run: |
+          mkdir -p build-src/www
+          cp project/index.html build-src/www/index.html
+
+          cd build-src
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.codestudio.createdapp",
+            "appName": "MiAplicacion",
+            "webDir": "www"
+          }
+          EOF
+
+          npx cap add android
+
+      - name: Compilar APK
+        run: |
+          cd build-src/android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Guardar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeStudio-APK
+          path: build-src/android/app/build/outputs/apk/debug/app-debug.apk
+          
